@@ -1,4 +1,5 @@
 import TableAutoCellRender from "@/components/core/parameterRenderComponent/components/tableComponent/components/tableAutoCellRender";
+import TableDropdownCellEditor from "@/components/core/parameterRenderComponent/components/tableComponent/components/tableDropdownCellEditor";
 import useAlertStore from "@/stores/alertStore";
 import { ColumnField, FormatterType } from "@/types/utils/functions";
 import { ColDef, ColGroupDef, ValueParserParams } from "ag-grid-community";
@@ -565,8 +566,24 @@ export function FormatColumns(columns: ColumnField[]): ColDef<any>[] {
       newCol.cellRendererParams = {
         formatter: col.formatter,
       };
-      if (col.formatter !== FormatterType.text || col.edit_mode !== "inline") {
-        if (col.edit_mode === "popover") {
+
+      if (
+        col.formatter !== FormatterType.text ||
+        col.edit_mode !== "inline" ||
+        col.options
+      ) {
+        if (col.options && col.formatter === FormatterType.text) {
+          newCol.cellEditor = TableDropdownCellEditor;
+          newCol.cellEditorPopup = false;
+          newCol.cellEditorParams = {
+            values: col.options,
+          };
+          newCol.autoHeight = false;
+          newCol.cellClass = "no-border !py-2";
+        } else if (
+          col.edit_mode === "popover" &&
+          col.formatter === FormatterType.text
+        ) {
           newCol.wrapText = false;
           newCol.autoHeight = false;
           newCol.cellEditor = "agLargeTextCellEditor";
@@ -574,6 +591,12 @@ export function FormatColumns(columns: ColumnField[]): ColDef<any>[] {
           newCol.cellEditorParams = {
             maxLength: 100000000,
           };
+        } else if (col.formatter === FormatterType.boolean) {
+          newCol.cellRenderer = TableAutoCellRender;
+          newCol.editable = false;
+          newCol.autoHeight = false;
+          newCol.cellClass = "no-border !py-2";
+          newCol.type = "boolean";
         } else {
           newCol.cellRenderer = TableAutoCellRender;
         }
@@ -754,3 +777,8 @@ export const isStringArray = (value: unknown): value is string[] => {
 };
 
 export const stringToBool = (str) => (str === "false" ? false : true);
+
+// Filter out null/undefined options
+export const filterNullOptions = (opts: any[]): any[] => {
+  return opts.filter((opt) => opt !== null && opt !== undefined);
+};
